@@ -89,46 +89,54 @@ def create_zip(files):
             zipf.writestr(file['filename'], file['content'])
     return tmp.name
 
-# -- UI Form --
-st.subheader("Enter Salesforce Credentials To Get Started")
-with st.form("creds_form"):
-    st.markdown("**Org A Credentials**")
-    username_a = st.text_input("Username A")
-    password_a = st.text_input("Password A", type="password")
-    token_a = st.text_input("Security Token A")
-    domain_a = st.selectbox("Domain A", ["login", "test"], index=0)
+# -- New First Screen --
+st.subheader("Have you migrated all your Conga Template records into the target org?")
+migration_status = st.radio("", ("Yes", "No"))
 
-    st.markdown("**Org B Credentials**")
-    username_b = st.text_input("Username B")
-    password_b = st.text_input("Password B", type="password")
-    token_b = st.text_input("Security Token B")
-    domain_b = st.selectbox("Domain B", ["login", "test"], index=0)
+if migration_status == "Yes":
+    # Show existing form
+    st.subheader("Enter Salesforce Credentials To Get Started")
+    with st.form("creds_form"):
+        st.markdown("**Org A Credentials**")
+        username_a = st.text_input("Username A")
+        password_a = st.text_input("Password A", type="password")
+        token_a = st.text_input("Security Token A")
+        domain_a = st.selectbox("Domain A", ["login", "test"], index=0)
 
-    submitted = st.form_submit_button("Start Migration")
+        st.markdown("**Org B Credentials**")
+        username_b = st.text_input("Username B")
+        password_b = st.text_input("Password B", type="password")
+        token_b = st.text_input("Security Token B")
+        domain_b = st.selectbox("Domain B", ["login", "test"], index=0)
 
-# -- Processing Logic --
-if submitted:
-    status_area = st.empty()
-    with st.spinner("Authenticating and processing files..."):
-        try:
-            status_area.text("Authenticating to Salesforce...")
-            sf_a = auth_sf(username_a, password_a, token_a, domain_a)
-            sf_b = auth_sf(username_b, password_b, token_b, domain_b)
+        submitted = st.form_submit_button("Start Migration")
 
-            links = get_cdls(sf_a, status_area)
-            files = download_files(sf_a, links, status_area)
-            orgA_ids = [f['entity_id'] for f in files]
-            orgB_ids = map_orgA_to_orgB(sf_a, sf_b, orgA_ids, status_area)
+    # -- Processing Logic --
+    if submitted:
+        status_area = st.empty()
+        with st.spinner("Authenticating and processing files..."):
+            try:
+                status_area.text("Authenticating to Salesforce...")
+                sf_a = auth_sf(username_a, password_a, token_a, domain_a)
+                sf_b = auth_sf(username_b, password_b, token_b, domain_b)
 
-            upload_files(sf_b, files, orgB_ids, status_area)
-            status_area.text("Creating zip archive of downloaded files...")
-            zip_path = create_zip(files)
+                links = get_cdls(sf_a, status_area)
+                files = download_files(sf_a, links, status_area)
+                orgA_ids = [f['entity_id'] for f in files]
+                orgB_ids = map_orgA_to_orgB(sf_a, sf_b, orgA_ids, status_area)
 
-            with open(zip_path, "rb") as f:
+                upload_files(sf_b, files, orgB_ids, status_area)
+                status_area.text("Creating zip archive of downloaded files...")
+                zip_path = create_zip(files)
+
+                with open(zip_path, "rb") as f:
+                    status_area.empty()
+                    st.success("Migration complete! You can download the files below.")
+                    st.download_button("Download ZIP of Migrated Files", f.read(), file_name="migrated_files.zip")
+
+            except Exception as e:
                 status_area.empty()
-                st.success("Migration complete! You can download the files below.")
-                st.download_button("Download ZIP of Migrated Files", f.read(), file_name="migrated_files.zip")
+                st.error(f"Error: {e}")
 
-        except Exception as e:
-            status_area.empty()
-            st.error(f"Error: {e}")
+elif migration_status == "No":
+    st.info("➡️ Please go migrate your Conga Template records and return here when done. Thank you!")
