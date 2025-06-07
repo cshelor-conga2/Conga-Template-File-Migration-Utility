@@ -91,9 +91,7 @@ def create_zip(files):
 
 # -- New First Screen --
 st.subheader("Have you migrated all your Conga Template records into the target org?")
-migration_status = st.radio("", ("", "Yes", "No")
-    index=0
-)
+migration_status = st.radio("", ("", "Yes", "No"), index=0 )
 
 if migration_status == "Yes":
     # Show existing form
