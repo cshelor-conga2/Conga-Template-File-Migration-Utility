@@ -16,6 +16,11 @@ A Streamlit-powered tool that helps you securely migrate Conga Template file att
 - Python 3.9 or later
 - Salesforce credentials for both orgs with API access
 
+## ⚠️ Security Note
+This utility directly takes in and uses Salesforce credentials.
+Credentials are not saved or shared.
+For production use, consider adding OAuth2 or environment-based secrets management.
+
 ## 📦 Installation
 
 Clone the repo and install dependencies:
@@ -24,3 +29,4 @@ Clone the repo and install dependencies:
 git clone https://github.com/yourusername/conga-file-migrator.git
 cd conga-file-migrator
 pip install -r requirements.txt
+
