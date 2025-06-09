@@ -105,13 +105,13 @@ if migration_status == "Yes":
         username_a = st.text_input("Username A")
         password_a = st.text_input("Password A", type="password")
         token_a = st.text_input("Security Token A")
-        domain_a = st.selectbox("Domain A", ["login", "test"], index=0)
+        domain_a = st.selectbox("Domain A - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
 
         st.markdown("**Org B Credentials**")
         username_b = st.text_input("Username B")
         password_b = st.text_input("Password B", type="password")
         token_b = st.text_input("Security Token B")
-        domain_b = st.selectbox("Domain B", ["login", "test"], index=0)
+        domain_b = st.selectbox("Domain B - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
 
         submitted = st.form_submit_button("Start Migration")
 
