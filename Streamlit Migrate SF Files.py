@@ -10,8 +10,35 @@ st.set_page_config(page_title="Conga Template File Migration Utility", layout="c
 st.title("Conga Template File Migration Utility")
 
 # -- Helper Functions --
-def auth_sf(username, password, token, domain):
-    return Salesforce(username=username, password=password, security_token=token, domain=domain)
+def auth_sf_oauth(username, password, security_token, client_id, client_secret, domain):
+    login_url = f"https://{domain}.salesforce.com/services/oauth2/token"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    payload = {
+        'grant_type': 'password',
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'username': username,
+        'password': password  # Append security token if required
+    }
+    
+    # Debugging
+    st.write("Sending request to:", login_url)
+    st.write("Payload:", payload)
+    
+    response = requests.post(login_url, headers=headers, data=payload)
+
+    # Debugging response
+    st.write("Response status code:", response.status_code)
+    st.write("Response content:", response.text)
+
+    response.raise_for_status()
+    access = response.json()
+
+    return Salesforce(instance_url=access['instance_url'],
+                      session_id=access['access_token'],
+                      )
 
 def get_cdls(sf, status_area):
     status_area.text("Querying ContentDocumentLinks in Org A...")
@@ -89,28 +116,39 @@ def create_zip(files):
             zipf.writestr(file['filename'], file['content'])
     return tmp.name
 
-# -- New First Screen --
+# -- Welcome Screen --
+st.header("Welcome to the Conga Template File Migration Utility")
+st.markdown("""
+    This utility helps you migrate Conga Template files from one Salesforce org to another.
+    Please ensure you have the necessary permissions and that the target org is ready for migration.
+""")
+
+# -- Second Screen --
 st.subheader("Have you migrated all your Conga Template records into the target org?")
 migration_status = st.selectbox(
-    "",
+    "_Choose an option to continue:_",
     options=["-- Select --", "Yes", "No"],
     index=0
 )
 
 if migration_status == "Yes":
-    # Show existing form
+    # Show credentials form
     st.subheader("Enter Salesforce Credentials To Get Started")
     with st.form("creds_form"):
         st.markdown("**Org A Credentials**")
         username_a = st.text_input("Username A")
         password_a = st.text_input("Password A", type="password")
-        token_a = st.text_input("Security Token A")
+        token_a = st.text_input("Security Token A", value="", type="password")
+        client_id_a = st.text_input("Client ID A")
+        client_secret_a = st.text_input("Client Secret A")
         domain_a = st.selectbox("Domain A - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
 
         st.markdown("**Org B Credentials**")
         username_b = st.text_input("Username B")
         password_b = st.text_input("Password B", type="password")
-        token_b = st.text_input("Security Token B")
+        token_b = st.text_input("Security Token B", value="", type="password")
+        client_id_b = st.text_input("Client ID B")
+        client_secret_b = st.text_input("Client Secret B")
         domain_b = st.selectbox("Domain B - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
 
         submitted = st.form_submit_button("Start Migration")
@@ -121,8 +159,8 @@ if migration_status == "Yes":
         with st.spinner("Authenticating and processing files..."):
             try:
                 status_area.text("Authenticating to Salesforce...")
-                sf_a = auth_sf(username_a, password_a, token_a, domain_a)
-                sf_b = auth_sf(username_b, password_b, token_b, domain_b)
+                sf_a = auth_sf_oauth(username_a, password_a, token_a, client_id_a, client_secret_a, domain_a)
+                sf_b = auth_sf_oauth(username_b, password_b, token_b, client_id_b, client_secret_b, domain_b)
 
                 links = get_cdls(sf_a, status_area)
                 files = download_files(sf_a, links, status_area)
