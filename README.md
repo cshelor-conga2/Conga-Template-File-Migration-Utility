@@ -26,10 +26,11 @@ https://conga-template-file-migration-utility.streamlit.app/
 
 ## 📦 Installation
 
-Clone the repo and install dependencies:
+The project runs on the Streamlit app and so the repo does not need to be installed on your machine.
+However, if you want to develop locally, you can clone the repo and install dependencies from the command line using the commands below, or use your favorite IDE to initiate a pull request.
 
 ```bash
-git clone https://github.com/yourusername/conga-file-migrator.git
-cd conga-file-migrator
+git clone https://github.com/cshelor-conga2/Conga-Template-File-Migration-Utility
+cd Conga-Template-File-Migration-Utility
 pip install -r requirements.txt
 

@@ -10,7 +10,7 @@ st.set_page_config(page_title="Conga Template File Migration Utility", layout="c
 st.title("Conga Template File Migration Utility")
 
 # -- Helper Functions --
-def auth_sf_oauth(username, password, security_token, client_id, client_secret, domain):
+def auth_sf_oauth(username, password, client_id, client_secret, domain):
     login_url = f"https://{domain}.salesforce.com/services/oauth2/token"
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -20,7 +20,7 @@ def auth_sf_oauth(username, password, security_token, client_id, client_secret, 
         'client_id': client_id,
         'client_secret': client_secret,
         'username': username,
-        'password': password  # Append security token if required
+        'password': password
     }
     
     # Debugging
@@ -138,7 +138,6 @@ if migration_status == "Yes":
         st.markdown("**Org A Credentials**")
         username_a = st.text_input("Username A")
         password_a = st.text_input("Password A", type="password")
-        token_a = st.text_input("Security Token A", value="", type="password")
         client_id_a = st.text_input("Client ID A")
         client_secret_a = st.text_input("Client Secret A")
         domain_a = st.selectbox("Domain A - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
@@ -146,7 +145,6 @@ if migration_status == "Yes":
         st.markdown("**Org B Credentials**")
         username_b = st.text_input("Username B")
         password_b = st.text_input("Password B", type="password")
-        token_b = st.text_input("Security Token B", value="", type="password")
         client_id_b = st.text_input("Client ID B")
         client_secret_b = st.text_input("Client Secret B")
         domain_b = st.selectbox("Domain B - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
@@ -159,8 +157,8 @@ if migration_status == "Yes":
         with st.spinner("Authenticating and processing files..."):
             try:
                 status_area.text("Authenticating to Salesforce...")
-                sf_a = auth_sf_oauth(username_a, password_a, token_a, client_id_a, client_secret_a, domain_a)
-                sf_b = auth_sf_oauth(username_b, password_b, token_b, client_id_b, client_secret_b, domain_b)
+                sf_a = auth_sf_oauth(username_a, password_a, client_id_a, client_secret_a, domain_a)
+                sf_b = auth_sf_oauth(username_b, password_b, client_id_b, client_secret_b, domain_b)
 
                 links = get_cdls(sf_a, status_area)
                 files = download_files(sf_a, links, status_area)
