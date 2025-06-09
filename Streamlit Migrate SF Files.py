@@ -14,7 +14,7 @@ def auth_sf(username, password, token, domain):
     return Salesforce(username=username, password=password, security_token=token, domain=domain)
 
 def get_cdls(sf, status_area):
-    status_area.text("Querying ContentDocumentLinks in Org A...")
+    status_area.text("Querying ContentDocumentLinks in Source Org...")
     query = """
         SELECT max(ContentDocumentId), LinkedEntityId 
         FROM ContentDocumentLink 
@@ -27,7 +27,7 @@ def get_cdls(sf, status_area):
 
 def download_files(sf, doc_links, status_area):
     file_data = []
-    status_area.text("Downloading files from Org A...")
+    status_area.text("Downloading files from Source Org...")
 
     for link in doc_links['records']:
         doc_id = link['expr0']
@@ -56,7 +56,7 @@ def download_files(sf, doc_links, status_area):
     return file_data
 
 def map_orgA_to_orgB(sf_a, sf_b, orgA_ids, status_area):
-    status_area.text("Mapping Org A records to Org B records...")
+    status_area.text("Mapping Source Org records to Target Org records...")
     id_list_str = ",".join([f"'{i}'" for i in orgA_ids])
     query_a = f"""
         SELECT Id, APXTConga4__Key__c 
@@ -72,7 +72,7 @@ def map_orgA_to_orgB(sf_a, sf_b, orgA_ids, status_area):
     return [b_key_map.get(key_map[i]) for i in orgA_ids]
 
 def upload_files(sf, file_data, orgB_ids, status_area):
-    status_area.text("Uploading files to Org B...")
+    status_area.text("Uploading files to Target Org...")
     for file, orgB_id in zip(file_data, orgB_ids):
         base64_str = base64.b64encode(file['content']).decode('utf-8')
         sf.ContentVersion.create({
@@ -89,25 +89,49 @@ def create_zip(files):
             zipf.writestr(file['filename'], file['content'])
     return tmp.name
 
-# -- New First Screen --
+# -- Welcome Screen --
+st.header("Welcome to the Conga Template File Migration Utility")
+st.markdown("""
+    ⚙️ This utility helps you migrate Conga Template Files from one Salesforce org to another.
+""")
+
+# -- Spacing --
+st.markdown("<br><br>", unsafe_allow_html=True)
+
+# -- Authentication Selection --
+st.subheader("Do you want to use OAuth or Security Token authentication?")
+auth_selection = st.selectbox(
+    "_Choose an option to continue:_",
+    options=["-- Select --", "OAuth", "Security Token"],
+    index=0
+)
+
+if auth_selection == "OAuth":
+    st.info("‼️ OAuth is not yet implemented in this utility. Please use Security Token for now.")
+
+elif auth_selection == "Security Token":
+    st.info("💻 Please ensure you have your Salesforce username, password, and security token ready.")
+    st.info("ℹ️ If your org does not allow you to reset your security token in user settings, insert your domain into this URL: https://[SalesforceDomainHere]/_ui/system/security/ResetApiTokenEdit")     
+
+# -- Template Record Migration Check --
 st.subheader("Have you migrated all your Conga Template records into the target org?")
 migration_status = st.selectbox(
-    "",
+    "_Choose an option to continue:_",
     options=["-- Select --", "Yes", "No"],
     index=0
 )
 
 if migration_status == "Yes":
-    # Show existing form
+    # Show credentials form
     st.subheader("Enter Salesforce Credentials To Get Started")
     with st.form("creds_form"):
-        st.markdown("**Org A Credentials**")
+        st.markdown("**Source Org Credentials**")
         username_a = st.text_input("Username A")
         password_a = st.text_input("Password A", type="password")
         token_a = st.text_input("Security Token A")
         domain_a = st.selectbox("Domain A - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
 
-        st.markdown("**Org B Credentials**")
+        st.markdown("**Target Org Credentials**")
         username_b = st.text_input("Username B")
         password_b = st.text_input("Password B", type="password")
         token_b = st.text_input("Security Token B")
@@ -118,9 +142,9 @@ if migration_status == "Yes":
     # -- Processing Logic --
     if submitted:
         status_area = st.empty()
-        with st.spinner("Authenticating and processing files..."):
+        with st.spinner("Migrating template files..."):
             try:
-                status_area.text("Authenticating to Salesforce...")
+                status_area.text("Authenticating Salesforce Credentials...")
                 sf_a = auth_sf(username_a, password_a, token_a, domain_a)
                 sf_b = auth_sf(username_b, password_b, token_b, domain_b)
 
@@ -143,4 +167,4 @@ if migration_status == "Yes":
                 st.error(f"Error: {e}")
 
 elif migration_status == "No":
-    st.info("➡️ Please go migrate your Conga Template records and return here when done. Thank you!")
+    st.info("➡️ Please migrate your Conga Template records and return here when done. Thank you!")
