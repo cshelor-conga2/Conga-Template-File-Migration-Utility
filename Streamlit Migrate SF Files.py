@@ -1,7 +1,7 @@
 import streamlit as st
 import tempfile
 import zipfile
-from simple_salesforce import Salesforce
+from simple_salesforce.api import Salesforce
 import requests
 import base64
 import os
