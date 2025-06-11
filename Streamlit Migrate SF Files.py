@@ -13,17 +13,34 @@ st.title("Conga Template File Migration Utility")
 def auth_sf(username, password, token, domain):
     return Salesforce(username=username, password=password, security_token=token, domain=domain)
 
-def get_cdls(sf, status_area):
-    status_area.text("Querying ContentDocumentLinks in Source Org...")
+def get_template_names(sf):
+    template_names = []
+    status_area.text("Getting List of Conga Templates in Source Org...")
     query = """
+        SELECT APXTConga4__Name__c 
+        FROM APXTConga4__Conga_Template__c
+    """
+    result = sf.query(query)
+    
+    for template in result['records']:
+        template_names.append(template['APXTConga4__Name__c'])
+
+    template_name_string = ", ".join([f"'{name}'" for name in template_names])   
+
+    return template_names, template_name_string
+
+def get_cdls(sf, status_area, template_name_string):
+    status_area.text("Querying ContentDocumentLinks in Source Org...")
+    query = f"""
         SELECT max(ContentDocumentId), LinkedEntityId 
         FROM ContentDocumentLink 
         WHERE LinkedEntityId IN (
-            SELECT Id FROM APXTConga4__Conga_Template__c
+            SELECT Id FROM APXTConga4__Conga_Template__c WHERE APXTConga4__Name__c IN ({template_name_string})
         )
         GROUP BY LinkedEntityId
     """
     return sf.query(query)
+
 
 def download_files(sf, doc_links, status_area):
     file_data = []
@@ -95,6 +112,10 @@ st.markdown("""
     ⚙️ This utility helps you migrate Conga Template Files from one Salesforce org to another.
 """)
 
+# -- Initialize Session State Variables --
+if "selected_templates" not in st.session_state:
+    st.session_state.selected_templates = []
+
 # -- Spacing --
 st.markdown("<br><br>", unsafe_allow_html=True)
 
@@ -137,34 +158,80 @@ if migration_status == "Yes":
         token_b = st.text_input("Security Token B")
         domain_b = st.selectbox("Domain B - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0)
 
-        submitted = st.form_submit_button("Start Migration")
+        if "submitted" not in st.session_state:
+            submitted = st.form_submit_button("Authenticate Salesforce Credentials")
+        else:
+            st.session_state.submitted = True
+
 
     # -- Processing Logic --
     if submitted:
+       
+        
+        username_a = "chris.shelor@tinderbox.com"
+        password_a = "gtx4rjx6TKJ@rap5kdc"
+        token_a = "P5MIBO3cpFrC6N3PgDgqjDd2"
+        domain_a = "login"
+
+        username_b = "cshelor510@agentforce.com"
+        password_b = "fwh3TUB7vqv8vkq_zqu"
+        token_b = "fRm08ax01sqjnDZ5SgtF5LqRu"
+        domain_b = "login"
         status_area = st.empty()
-        with st.spinner("Migrating template files..."):
-            try:
+        try:
+             # Authenticate only if not already in session_state
+            if "sf_a" not in st.session_state or "sf_b" not in st.session_state:
                 status_area.text("Authenticating Salesforce Credentials...")
                 sf_a = auth_sf(username_a, password_a, token_a, domain_a)
                 sf_b = auth_sf(username_b, password_b, token_b, domain_b)
+                st.session_state.sf_a = sf_a
+                st.session_state.sf_b = sf_b
+            else:
+                sf_a = st.session_state.sf_a
+                sf_b = st.session_state.sf_b
 
-                links = get_cdls(sf_a, status_area)
-                files = download_files(sf_a, links, status_area)
-                orgA_ids = [f['entity_id'] for f in files]
-                orgB_ids = map_orgA_to_orgB(sf_a, sf_b, orgA_ids, status_area)
+            # Cache template_names and template_name_string in session_state, i.e. only run once
+            if "template_names" not in st.session_state or "template_name_string" not in st.session_state:
+                template_names, template_name_string = get_template_names(sf_a)
+                st.session_state.template_names = template_names
+                st.session_state.template_name_string = template_name_string
+            else:
+                template_names = st.session_state.template_names
+                template_name_string = st.session_state.template_name_string
 
-                upload_files(sf_b, files, orgB_ids, status_area)
-                status_area.text("Creating zip archive of downloaded files...")
-                zip_path = create_zip(files)
+        except Exception as e:
+            status_area.empty()
+            st.error(f"Error: {e}")
 
-                with open(zip_path, "rb") as f:
-                    status_area.empty()
-                    st.success("Migration complete! You can download the files below.")
-                    st.download_button("Download ZIP of Migrated Files", f.read(), file_name="migrated_files.zip")
+        selected_templates = st.multiselect(
+            "Select Conga Templates to Migrate",
+            template_names,
+            default=st.session_state.selected_templates,
+            key="selected_templates")
+        
+     #   st.session_state.selected_templates = selected_templates
+        
+        if st.button("Migrate Selected Templates"):
+            if st.session_state.selected_templates:
+                with st.spinner("Creating Template List..."):
+                    try:
+                        links = get_cdls(sf_a, status_area, template_name_string)
+                        files = download_files(sf_a, links, status_area)
+                        orgA_ids = [f['entity_id'] for f in files]
+                        orgB_ids = map_orgA_to_orgB(sf_a, sf_b, orgA_ids, status_area)
 
-            except Exception as e:
-                status_area.empty()
-                st.error(f"Error: {e}")
+                        upload_files(sf_b, files, orgB_ids, status_area)
+                        status_area.text("Creating zip archive of downloaded files...")
+                        zip_path = create_zip(files)
+
+                        with open(zip_path, "rb") as f:
+                            status_area.empty()
+                            st.success("Migration complete! You can download the files below.")
+                            st.download_button("Download ZIP of Migrated Files", f.read(), file_name="migrated_files.zip")
+
+                    except Exception as e:
+                        status_area.empty()
+                        st.error(f"Error: {e}")
 
 elif migration_status == "No":
     st.info("➡️ Please migrate your Conga Template records and return here when done. Thank you!")
