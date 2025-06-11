@@ -138,7 +138,7 @@ st.divider()
 st.subheader("Do you want to use OAuth or Security Token authentication?")
 auth_selection = st.selectbox(
     "_Choose an option to continue:_",
-    options=["-- Select --", "OAuth", "Security Token"],
+    options=["-- Select --", "Security Token", "OAuth"],
     index=0
 )
 
@@ -167,15 +167,15 @@ if migration_status == "Yes":
         st.subheader("Enter Salesforce Credentials To Get Started")
         with st.form("creds_form"):
             st.markdown("**Source Org Credentials**")
-            username_a = st.text_input("Username A", key="username_a", value="chris.shelor@tinderbox.com")
-            password_a = st.text_input("Password A", key="password_a", value="gtx4rjx6TKJ@rap5kdc", type="password")
-            token_a = st.text_input("Security Token A", key="token_a", value="P5MIBO3cpFrC6N3PgDgqjDd2")
+            username_a = st.text_input("Username A", key="username_a")
+            password_a = st.text_input("Password A", key="password_a", type="password")
+            token_a = st.text_input("Security Token A", key="token_a", type="password")
             domain_a = st.selectbox("Domain A - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0, key="domain_a")
 
             st.markdown("**Target Org Credentials**")
-            username_b = st.text_input("Username B", key="username_b", value="cshelor510@agentforce.com")
-            password_b = st.text_input("Password B", key="password_b", value="fwh3TUB7vqv8vkq_zqu", type="password")
-            token_b = st.text_input("Security Token B", key="token_b", value="fRm08ax01sqjnDZ5SgtF5LqRu")
+            username_b = st.text_input("Username B", key="username_b")
+            password_b = st.text_input("Password B", key="password_b", type="password")
+            token_b = st.text_input("Security Token B", key="token_b", type="password")
             domain_b = st.selectbox("Domain B - _\"login\" for dev or prod, \"test\" for sandbox_", ["login", "test"], index=0, key="domain_b")
 
             submitted = st.form_submit_button("Authenticate Salesforce Credentials", on_click=form_submit_status)
