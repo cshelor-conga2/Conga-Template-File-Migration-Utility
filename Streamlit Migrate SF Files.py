@@ -4,7 +4,6 @@ import zipfile
 from simple_salesforce.api import Salesforce
 import requests
 import base64
-import os
 
 st.set_page_config(page_title="Conga Template File Migration Utility", layout="centered")
 st.title("Conga Template File Migration Utility")
@@ -13,7 +12,8 @@ st.title("Conga Template File Migration Utility")
 def auth_sf(username, password, token, domain):
     return Salesforce(username=username, password=password, security_token=token, domain=domain)
 
-def get_template_names(sf):
+# -- Retrieve Conga Template record names for all records in given SF org (sf param) --
+def get_template_names(sf, status_area):
     template_names = []
     status_area.text("Getting List of Conga Templates in Source Org...")
     query = """
@@ -195,7 +195,7 @@ if migration_status == "Yes":
                 sf_a = st.session_state.sf_a
                 sf_b = st.session_state.sf_b
 
-            template_names = get_template_names(sf_a)
+            template_names = get_template_names(sf_a, status_area)
             st.success("✅ Templates retrieved successfully!")
            
         except Exception as e:
